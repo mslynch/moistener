@@ -1,0 +1,6 @@
+nltk==3.2.5
+pyaml==17.12.1
+
+python-crontab==2.2.8; sys.platform=='linux' or sys.platform=='darwin'
+notify2==0.3.1; sys_platform=='linux'
+win10toast==0.9; sys_platform=='win32'
