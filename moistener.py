@@ -68,9 +68,9 @@ def notify_mac(title, message):
     '''
     Sends a notification through osascript.
     '''
-    subprocess.call('''
+    subprocess.call("""
               osascript -e 'display notification "{}" with title "{}"'
-              '''.format(title, message))
+              """.format(message, title), shell=True)
 
 
 def process_string(string):

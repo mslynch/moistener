@@ -72,7 +72,7 @@ def main():
     elif sys.platform == 'linux':
         add_cron(py_loc, interval)
     else:
-        add_cron(py_loc, interval)
+        add_launchd(py_loc, interval)
 
     print("Installation complete.")
 
@@ -139,22 +139,40 @@ def add_cron(py_loc, interval):
     '''
     cron = CronTab(user=True)
     cron.remove_all(comment='moistener')
-    if sys.platform == 'linux':
-        cron_command = 'export $(egrep -z DBUS_SESSION_BUS_ADDRESS /proc/$( ' + \
-            'pgrep -u "$LOGNAME" cinnamon-session || ' +                        \
-            'pgrep -u "$LOGNAME" kdeinit || ' +                                 \
-            'pgrep -u $LOGNAME gnome-session || ' +                             \
-            'pgrep -u "$LOGNAME" gnome-shell || ' +                             \
-            'pgrep -u "$LOGNAME" xfce4-session' +                               \
-            ')/environ) && DISPLAY=:0 ' + py_loc
-    else:
-        cron_command = py_loc
+    cron_command = 'export $(egrep -z DBUS_SESSION_BUS_ADDRESS /proc/$( ' + \
+        'pgrep -u "$LOGNAME" cinnamon-session || ' +                        \
+        'pgrep -u "$LOGNAME" kdeinit || ' +                                 \
+        'pgrep -u $LOGNAME gnome-session || ' +                             \
+        'pgrep -u "$LOGNAME" gnome-shell || ' +                             \
+        'pgrep -u "$LOGNAME" xfce4-session' +                               \
+        ')/environ) && DISPLAY=:0 ' + py_loc
     job = cron.new(
         command=cron_command,
         comment='moistener')
     job.minute.every(int(interval))
     cron.write()
     print("Scheduled cron job!")
+
+
+def add_launchd(py_loc, interval):
+    '''
+    Adds moistener to the user's launchd.
+    '''
+    agent_path = os.path.expanduser('~/Library/LaunchAgents')
+    plist_name = 'com.mslynch.moistener.plist'
+    plist_loc = agent_path + '/' + plist_name
+
+    subprocess.call('launchctl unload -w ' + plist_loc, shell=True)
+
+    with open(plist_name, 'r') as myfile:
+        interval_seconds = str(int(interval) * 60)
+        plist_str = myfile.read().replace('EXECUTABLE', sys.executable).replace(
+            'PY_LOC', py_loc).replace('INTERVAL', interval_seconds)
+        with open(plist_loc, 'w') as plist_file:
+            plist_file.write(plist_str)
+
+    subprocess.call('launchctl load -w ' + plist_loc, shell=True)
+    print("Added to launchd!")
 
 
 if __name__ == '__main__':
